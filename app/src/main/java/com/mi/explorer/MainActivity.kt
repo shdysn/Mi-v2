@@ -31,6 +31,7 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mi.explorer.data.model.FileItem
 import com.mi.explorer.ui.components.ApkInstallDialog
+import com.mi.explorer.ui.components.ChecksumDialog
 import com.mi.explorer.ui.components.MiFullAudioPlayerSheet
 import com.mi.explorer.ui.components.MiMiniAudioBar
 import com.mi.explorer.ui.screens.*
@@ -211,8 +212,13 @@ fun MiMainApp(viewModel: ExplorerViewModel) {
         }
     }
 
+    var apkChecksumTarget by remember { mutableStateOf<FileItem?>(null) }
+
     BackHandler(enabled = true) {
-        viewModel.handleBackPress()
+        val handled = viewModel.handleBackPress()
+        if (!handled) {
+            (context as? android.app.Activity)?.finish()
+        }
     }
 
     val audioPlayerState by viewModel.audioPlayerState.collectAsStateWithLifecycle()
@@ -278,7 +284,17 @@ fun MiMainApp(viewModel: ExplorerViewModel) {
                 },
                 onShare = {
                     FileOpener.shareFile(context, FileItem(apk.file))
+                },
+                onChecksum = {
+                    apkChecksumTarget = FileItem(apk.file)
                 }
+            )
+        }
+
+        apkChecksumTarget?.let { item ->
+            ChecksumDialog(
+                item = item,
+                onDismiss = { apkChecksumTarget = null }
             )
         }
 

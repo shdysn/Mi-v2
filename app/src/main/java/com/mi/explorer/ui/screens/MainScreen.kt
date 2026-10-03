@@ -263,6 +263,11 @@ fun MainScreen(
                                 }
                                 "delete" -> deleteTargets = listOf(item)
                                 "details" -> detailsTarget = item
+                                "zip" -> {
+                                    zipArchiveName = "${item.name}.zip"
+                                    zipTargets = listOf(item)
+                                }
+                                "unzip" -> viewModel.openZipViewer(item.file)
                             }
                         },
                         onRefresh = { viewModel.loadRecentFiles() }
