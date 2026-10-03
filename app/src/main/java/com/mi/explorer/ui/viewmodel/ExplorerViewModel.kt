@@ -39,7 +39,8 @@ enum class Screen {
     PDF_VIEWER,
     VIDEO_PLAYER,
     NETWORK_DRIVES,
-    FAST_SHARE
+    FAST_SHARE,
+    SOCIAL_HUB
 }
 
 data class PdfViewerState(
@@ -714,6 +715,37 @@ class ExplorerViewModel(application: Application) : AndroidViewModel(application
             val items = fileRepository.getCategoryFiles(category)
             _categoryViewState.update { it.copy(items = items, isLoading = false) }
         }
+    }
+
+    // Social Media Hub
+    private val _socialHubState = MutableStateFlow(SocialHubState())
+    val socialHubState: StateFlow<SocialHubState> = _socialHubState.asStateFlow()
+
+    fun openSocialHub() {
+        navigateToScreen(Screen.SOCIAL_HUB)
+        loadSocialHub()
+    }
+
+    fun loadSocialHub() {
+        viewModelScope.launch {
+            _socialHubState.update { it.copy(isLoading = true) }
+            val apps = fileRepository.getSocialAppGroups(getApplication())
+            _socialHubState.update { it.copy(apps = apps, isLoading = false) }
+        }
+    }
+
+    fun setSocialFilter(filter: String) {
+        _socialHubState.update { it.copy(selectedFilter = filter) }
+    }
+
+    fun setSocialSearchQuery(query: String) {
+        _socialHubState.update { it.copy(searchQuery = query) }
+    }
+
+    fun navigateToSocialFolder(folder: File) {
+        _selectedTab.value = MiTab.STORAGE
+        loadDirectory(folder, addToHistory = true)
+        _currentScreen.value = Screen.MAIN
     }
 
     // Text & HTML Editor/Viewer

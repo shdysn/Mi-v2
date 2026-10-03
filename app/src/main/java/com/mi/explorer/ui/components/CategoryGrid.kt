@@ -28,13 +28,15 @@ data class MiCategory(
     val iconColor: Color,
     val bgColor: Color,
     val category: FileCategory?,
-    val isTools: Boolean = false
+    val isTools: Boolean = false,
+    val isSocial: Boolean = false
 )
 
 @Composable
 fun CategoryGrid(
     onCategoryClick: (FileCategory, String) -> Unit,
     onToolsClick: () -> Unit,
+    onSocialClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val items = listOf(
@@ -44,6 +46,7 @@ fun CategoryGrid(
         MiCategory("Music", Icons.Default.Audiotrack, Color.White, MiRed, FileCategory.AUDIO),
         MiCategory("APKs", Icons.Default.Android, Color.White, MiGreen, FileCategory.APK),
         MiCategory("Downloads", Icons.Default.Download, Color.White, MiCyan, null),
+        MiCategory("Social", Icons.Default.Chat, Color.White, Color(0xFF25D366), null, isSocial = true),
         MiCategory("Archives", Icons.Default.Archive, Color.White, MiAmber, FileCategory.ARCHIVE),
         MiCategory("Tools", Icons.Default.Widgets, Color.White, Color(0xFF6366F1), null, isTools = true)
     )
@@ -53,22 +56,16 @@ fun CategoryGrid(
             .fillMaxWidth()
             .testTag("mi_category_grid")
     ) {
-        // Row 1 (first 4 items)
+        // Row 1 (Images, Videos, Docs)
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            items.take(4).forEach { cat ->
+            items.slice(0..2).forEach { cat ->
                 CategoryTile(
                     category = cat,
                     onClick = {
-                        if (cat.isTools) {
-                            onToolsClick()
-                        } else if (cat.category != null) {
-                            onCategoryClick(cat.category, cat.title)
-                        } else if (cat.title == "Downloads") {
-                            onCategoryClick(FileCategory.UNKNOWN, "Downloads")
-                        }
+                        handleCategoryClick(cat, onToolsClick, onSocialClick, onCategoryClick)
                     },
                     modifier = Modifier.weight(1f)
                 )
@@ -77,27 +74,56 @@ fun CategoryGrid(
 
         Spacer(modifier = Modifier.height(14.dp))
 
-        // Row 2 (next 4 items)
+        // Row 2 (Music, APKs, Downloads)
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            items.drop(4).forEach { cat ->
+            items.slice(3..5).forEach { cat ->
                 CategoryTile(
                     category = cat,
                     onClick = {
-                        if (cat.isTools) {
-                            onToolsClick()
-                        } else if (cat.category != null) {
-                            onCategoryClick(cat.category, cat.title)
-                        } else if (cat.title == "Downloads") {
-                            onCategoryClick(FileCategory.UNKNOWN, "Downloads")
-                        }
+                        handleCategoryClick(cat, onToolsClick, onSocialClick, onCategoryClick)
                     },
                     modifier = Modifier.weight(1f)
                 )
             }
         }
+
+        Spacer(modifier = Modifier.height(14.dp))
+
+        // Row 3 (Social, Archives, Tools)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            items.slice(6..8).forEach { cat ->
+                CategoryTile(
+                    category = cat,
+                    onClick = {
+                        handleCategoryClick(cat, onToolsClick, onSocialClick, onCategoryClick)
+                    },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+    }
+}
+
+private fun handleCategoryClick(
+    cat: MiCategory,
+    onToolsClick: () -> Unit,
+    onSocialClick: () -> Unit,
+    onCategoryClick: (FileCategory, String) -> Unit
+) {
+    if (cat.isTools) {
+        onToolsClick()
+    } else if (cat.isSocial) {
+        onSocialClick()
+    } else if (cat.category != null) {
+        onCategoryClick(cat.category, cat.title)
+    } else if (cat.title == "Downloads") {
+        onCategoryClick(FileCategory.UNKNOWN, "Downloads")
     }
 }
 

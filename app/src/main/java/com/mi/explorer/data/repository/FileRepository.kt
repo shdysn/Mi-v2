@@ -10,6 +10,9 @@ import com.mi.explorer.data.model.FileCategory
 import com.mi.explorer.data.model.FileItem
 import com.mi.explorer.data.model.SortType
 import com.mi.explorer.data.model.StorageSpace
+import com.mi.explorer.data.model.SocialFolderEntry
+import com.mi.explorer.data.model.SocialAppGroup
+import com.mi.explorer.data.model.SocialFolderType
 import com.mi.explorer.data.model.StorageVolumeItem
 import com.mi.explorer.data.model.VolumeType
 import java.io.File
@@ -766,5 +769,362 @@ class FileRepository(private val context: Context) {
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    suspend fun getSocialAppGroups(context: Context): List<SocialAppGroup> = withContext(Dispatchers.IO) {
+        val groups = mutableListOf<SocialAppGroup>()
+        val packageManager = context.packageManager
+
+        fun isInstalled(pkg: String): Boolean {
+            return try {
+                packageManager.getPackageInfo(pkg, 0)
+                true
+            } catch (e: Exception) {
+                false
+            }
+        }
+
+        val root = rootStorageDirectory
+        val androidMedia = File(root, "Android/media")
+        val pictures = File(root, "Pictures")
+        val movies = File(root, "Movies")
+        val download = downloadsDirectory
+        val sampleBase = File(context.getExternalFilesDir(null) ?: context.filesDir, "MiExplorer")
+
+        fun createEntry(dir: File, hint: String): SocialFolderEntry? {
+            if (!dir.exists() || !dir.isDirectory) return null
+            val files = dir.listFiles() ?: return null
+            val count = files.size
+            var size = 0L
+            for (f in files) {
+                size += if (f.isDirectory) calculateDirectorySize(f, maxDepth = 2) else f.length()
+            }
+            return SocialFolderEntry(
+                name = dir.name,
+                folder = dir,
+                fileCount = count,
+                sizeBytes = size,
+                lastModified = dir.lastModified(),
+                categoryHint = hint
+            )
+        }
+
+        // 1. WhatsApp
+        val waFolders = mutableListOf<SocialFolderEntry>()
+        val waCandidates = listOf(
+            Pair(File(androidMedia, "com.whatsapp/WhatsApp/Media/WhatsApp Images"), "Images"),
+            Pair(File(androidMedia, "com.whatsapp/WhatsApp/Media/WhatsApp Video"), "Videos"),
+            Pair(File(androidMedia, "com.whatsapp/WhatsApp/Media/WhatsApp Documents"), "Documents"),
+            Pair(File(androidMedia, "com.whatsapp/WhatsApp/Media/WhatsApp Audio"), "Audio"),
+            Pair(File(androidMedia, "com.whatsapp/WhatsApp/Media/WhatsApp Voice Notes"), "Voice Notes"),
+            Pair(File(androidMedia, "com.whatsapp/WhatsApp/Media/WhatsApp Animated Gifs"), "GIFs"),
+            Pair(File(androidMedia, "com.whatsapp/WhatsApp/Media/WhatsApp Stickers"), "Stickers"),
+            Pair(File(root, "WhatsApp/Media/WhatsApp Images"), "Images"),
+            Pair(File(root, "WhatsApp/Media/WhatsApp Video"), "Videos"),
+            Pair(File(root, "WhatsApp/Media/WhatsApp Documents"), "Documents"),
+            Pair(File(root, "WhatsApp/Media/WhatsApp Audio"), "Audio"),
+            Pair(File(sampleBase, "WhatsApp/WhatsApp Images"), "Images"),
+            Pair(File(sampleBase, "WhatsApp/WhatsApp Video"), "Videos"),
+            Pair(File(sampleBase, "WhatsApp"), "Media")
+        )
+        for ((cand, hint) in waCandidates) {
+            createEntry(cand, hint)?.let { entry ->
+                if (waFolders.none { it.folder.absolutePath == entry.folder.absolutePath }) {
+                    waFolders.add(entry)
+                }
+            }
+        }
+        val isWaInstalled = isInstalled("com.whatsapp") || isInstalled("com.whatsapp.w4b")
+        if (isWaInstalled || waFolders.isNotEmpty()) {
+            groups.add(
+                SocialAppGroup(
+                    socialType = SocialFolderType.WHATSAPP,
+                    packageName = "com.whatsapp",
+                    isAppInstalled = isWaInstalled,
+                    folders = waFolders
+                )
+            )
+        }
+
+        // 2. Telegram
+        val tgFolders = mutableListOf<SocialFolderEntry>()
+        val tgCandidates = listOf(
+            Pair(File(root, "Telegram/Telegram Images"), "Images"),
+            Pair(File(root, "Telegram/Telegram Video"), "Videos"),
+            Pair(File(root, "Telegram/Telegram Documents"), "Documents"),
+            Pair(File(root, "Telegram/Telegram Audio"), "Audio"),
+            Pair(File(root, "Telegram"), "Media"),
+            Pair(File(androidMedia, "org.telegram.messenger/Telegram/Telegram Images"), "Images"),
+            Pair(File(androidMedia, "org.telegram.messenger/Telegram/Telegram Video"), "Videos"),
+            Pair(File(sampleBase, "Telegram"), "Media")
+        )
+        for ((cand, hint) in tgCandidates) {
+            createEntry(cand, hint)?.let { entry ->
+                if (tgFolders.none { it.folder.absolutePath == entry.folder.absolutePath }) {
+                    tgFolders.add(entry)
+                }
+            }
+        }
+        val isTgInstalled = isInstalled("org.telegram.messenger") || isInstalled("org.telegram.messenger.web")
+        if (isTgInstalled || tgFolders.isNotEmpty()) {
+            groups.add(
+                SocialAppGroup(
+                    socialType = SocialFolderType.TELEGRAM,
+                    packageName = "org.telegram.messenger",
+                    isAppInstalled = isTgInstalled,
+                    folders = tgFolders
+                )
+            )
+        }
+
+        // 3. Instagram
+        val igFolders = mutableListOf<SocialFolderEntry>()
+        val igCandidates = listOf(
+            Pair(File(pictures, "Instagram"), "Images"),
+            Pair(File(movies, "Instagram"), "Videos"),
+            Pair(File(root, "Instagram"), "Media"),
+            Pair(File(sampleBase, "Instagram"), "Media")
+        )
+        for ((cand, hint) in igCandidates) {
+            createEntry(cand, hint)?.let { entry ->
+                if (igFolders.none { it.folder.absolutePath == entry.folder.absolutePath }) {
+                    igFolders.add(entry)
+                }
+            }
+        }
+        val isIgInstalled = isInstalled("com.instagram.android")
+        if (isIgInstalled || igFolders.isNotEmpty()) {
+            groups.add(
+                SocialAppGroup(
+                    socialType = SocialFolderType.INSTAGRAM,
+                    packageName = "com.instagram.android",
+                    isAppInstalled = isIgInstalled,
+                    folders = igFolders
+                )
+            )
+        }
+
+        // 4. Facebook & Messenger
+        val fbFolders = mutableListOf<SocialFolderEntry>()
+        val fbCandidates = listOf(
+            Pair(File(pictures, "Facebook"), "Images"),
+            Pair(File(movies, "Facebook"), "Videos"),
+            Pair(File(pictures, "Messenger"), "Images"),
+            Pair(File(movies, "Messenger"), "Videos"),
+            Pair(File(root, "Facebook"), "Media")
+        )
+        for ((cand, hint) in fbCandidates) {
+            createEntry(cand, hint)?.let { entry ->
+                if (fbFolders.none { it.folder.absolutePath == entry.folder.absolutePath }) {
+                    fbFolders.add(entry)
+                }
+            }
+        }
+        val isFbInstalled = isInstalled("com.facebook.katana") || isInstalled("com.facebook.orca")
+        if (isFbInstalled || fbFolders.isNotEmpty()) {
+            groups.add(
+                SocialAppGroup(
+                    socialType = SocialFolderType.FACEBOOK,
+                    packageName = "com.facebook.katana",
+                    isAppInstalled = isFbInstalled,
+                    folders = fbFolders
+                )
+            )
+        }
+
+        // 5. TikTok
+        val ttFolders = mutableListOf<SocialFolderEntry>()
+        val ttCandidates = listOf(
+            Pair(File(movies, "TikTok"), "Videos"),
+            Pair(File(pictures, "TikTok"), "Images"),
+            Pair(File(root, "TikTok"), "Videos")
+        )
+        for ((cand, hint) in ttCandidates) {
+            createEntry(cand, hint)?.let { entry ->
+                if (ttFolders.none { it.folder.absolutePath == entry.folder.absolutePath }) {
+                    ttFolders.add(entry)
+                }
+            }
+        }
+        val isTtInstalled = isInstalled("com.zhiliaoapp.musically") || isInstalled("com.ss.android.ugc.trill")
+        if (isTtInstalled || ttFolders.isNotEmpty()) {
+            groups.add(
+                SocialAppGroup(
+                    socialType = SocialFolderType.TIKTOK,
+                    packageName = "com.zhiliaoapp.musically",
+                    isAppInstalled = isTtInstalled,
+                    folders = ttFolders
+                )
+            )
+        }
+
+        // 6. Snapchat
+        val snapFolders = mutableListOf<SocialFolderEntry>()
+        val snapCandidates = listOf(
+            Pair(File(pictures, "Snapchat"), "Images"),
+            Pair(File(movies, "Snapchat"), "Videos"),
+            Pair(File(root, "Snapchat"), "Media")
+        )
+        for ((cand, hint) in snapCandidates) {
+            createEntry(cand, hint)?.let { entry ->
+                if (snapFolders.none { it.folder.absolutePath == entry.folder.absolutePath }) {
+                    snapFolders.add(entry)
+                }
+            }
+        }
+        val isSnapInstalled = isInstalled("com.snapchat.android")
+        if (isSnapInstalled || snapFolders.isNotEmpty()) {
+            groups.add(
+                SocialAppGroup(
+                    socialType = SocialFolderType.SNAPCHAT,
+                    packageName = "com.snapchat.android",
+                    isAppInstalled = isSnapInstalled,
+                    folders = snapFolders
+                )
+            )
+        }
+
+        // 7. Twitter / X
+        val twFolders = mutableListOf<SocialFolderEntry>()
+        val twCandidates = listOf(
+            Pair(File(pictures, "Twitter"), "Images"),
+            Pair(File(movies, "Twitter"), "Videos"),
+            Pair(File(download, "Twitter"), "Media")
+        )
+        for ((cand, hint) in twCandidates) {
+            createEntry(cand, hint)?.let { entry ->
+                if (twFolders.none { it.folder.absolutePath == entry.folder.absolutePath }) {
+                    twFolders.add(entry)
+                }
+            }
+        }
+        val isTwInstalled = isInstalled("com.twitter.android")
+        if (isTwInstalled || twFolders.isNotEmpty()) {
+            groups.add(
+                SocialAppGroup(
+                    socialType = SocialFolderType.TWITTER,
+                    packageName = "com.twitter.android",
+                    isAppInstalled = isTwInstalled,
+                    folders = twFolders
+                )
+            )
+        }
+
+        // 8. YouTube
+        val ytFolders = mutableListOf<SocialFolderEntry>()
+        val ytCandidates = listOf(
+            Pair(File(movies, "YouTube"), "Videos"),
+            Pair(File(download, "YouTube"), "Videos")
+        )
+        for ((cand, hint) in ytCandidates) {
+            createEntry(cand, hint)?.let { entry ->
+                if (ytFolders.none { it.folder.absolutePath == entry.folder.absolutePath }) {
+                    ytFolders.add(entry)
+                }
+            }
+        }
+        val isYtInstalled = isInstalled("com.google.android.youtube")
+        if (isYtInstalled || ytFolders.isNotEmpty()) {
+            groups.add(
+                SocialAppGroup(
+                    socialType = SocialFolderType.YOUTUBE,
+                    packageName = "com.google.android.youtube",
+                    isAppInstalled = isYtInstalled,
+                    folders = ytFolders
+                )
+            )
+        }
+
+        // 9. Reddit
+        val rdFolders = mutableListOf<SocialFolderEntry>()
+        val rdCandidates = listOf(
+            Pair(File(pictures, "Reddit"), "Images"),
+            Pair(File(movies, "Reddit"), "Videos")
+        )
+        for ((cand, hint) in rdCandidates) {
+            createEntry(cand, hint)?.let { entry ->
+                if (rdFolders.none { it.folder.absolutePath == entry.folder.absolutePath }) {
+                    rdFolders.add(entry)
+                }
+            }
+        }
+        val isRdInstalled = isInstalled("com.reddit.frontpage")
+        if (isRdInstalled || rdFolders.isNotEmpty()) {
+            groups.add(
+                SocialAppGroup(
+                    socialType = SocialFolderType.REDDIT,
+                    packageName = "com.reddit.frontpage",
+                    isAppInstalled = isRdInstalled,
+                    folders = rdFolders
+                )
+            )
+        }
+
+        // 10. Discord
+        val dcFolders = mutableListOf<SocialFolderEntry>()
+        val dcCandidates = listOf(
+            Pair(File(pictures, "Discord"), "Images"),
+            Pair(File(movies, "Discord"), "Videos")
+        )
+        for ((cand, hint) in dcCandidates) {
+            createEntry(cand, hint)?.let { entry ->
+                if (dcFolders.none { it.folder.absolutePath == entry.folder.absolutePath }) {
+                    dcFolders.add(entry)
+                }
+            }
+        }
+        val isDcInstalled = isInstalled("com.discord")
+        if (isDcInstalled || dcFolders.isNotEmpty()) {
+            groups.add(
+                SocialAppGroup(
+                    socialType = SocialFolderType.DISCORD,
+                    packageName = "com.discord",
+                    isAppInstalled = isDcInstalled,
+                    folders = dcFolders
+                )
+            )
+        }
+
+        // Fallback for emulator / fresh storage
+        if (groups.isEmpty()) {
+            val defaultWa = File(sampleBase, "WhatsApp").apply { mkdirs() }
+            val defaultWaImg = File(defaultWa, "WhatsApp Images").apply { mkdirs() }
+            val defaultWaVid = File(defaultWa, "WhatsApp Video").apply { mkdirs() }
+            val defaultTg = File(sampleBase, "Telegram").apply { mkdirs() }
+            val defaultIg = File(sampleBase, "Instagram").apply { mkdirs() }
+
+            createEntry(defaultWaImg, "Images")?.let {
+                groups.add(
+                    SocialAppGroup(
+                        socialType = SocialFolderType.WHATSAPP,
+                        packageName = "com.whatsapp",
+                        isAppInstalled = false,
+                        folders = listOf(it, createEntry(defaultWaVid, "Videos") ?: it)
+                    )
+                )
+            }
+            createEntry(defaultTg, "Media")?.let {
+                groups.add(
+                    SocialAppGroup(
+                        socialType = SocialFolderType.TELEGRAM,
+                        packageName = "org.telegram.messenger",
+                        isAppInstalled = false,
+                        folders = listOf(it)
+                    )
+                )
+            }
+            createEntry(defaultIg, "Media")?.let {
+                groups.add(
+                    SocialAppGroup(
+                        socialType = SocialFolderType.INSTAGRAM,
+                        packageName = "com.instagram.android",
+                        isAppInstalled = false,
+                        folders = listOf(it)
+                    )
+                )
+            }
+        }
+
+        groups
     }
 }

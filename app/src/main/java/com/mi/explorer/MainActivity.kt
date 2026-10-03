@@ -257,6 +257,7 @@ fun MiMainApp(viewModel: ExplorerViewModel) {
                 Screen.VIDEO_PLAYER -> VideoPlayerScreen(viewModel = viewModel)
                 Screen.NETWORK_DRIVES -> NetworkDrivesScreen(viewModel = viewModel)
                 Screen.FAST_SHARE -> FastShareScreen(viewModel = viewModel)
+                Screen.SOCIAL_HUB -> SocialHubScreen(viewModel = viewModel)
             }
         }
 

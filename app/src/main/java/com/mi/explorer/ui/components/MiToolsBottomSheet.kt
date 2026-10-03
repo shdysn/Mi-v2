@@ -45,9 +45,18 @@ fun MiToolsBottomSheet(
     onAppManagerClick: () -> Unit,
     onFtpClick: () -> Unit,
     onDualPaneToggle: () -> Unit,
-    isDualPaneActive: Boolean = false
+    isDualPaneActive: Boolean = false,
+    onSocialClick: () -> Unit = {}
 ) {
     val tools = listOf(
+        ToolItem(
+            id = "social",
+            title = "Social Folders",
+            subtitle = "WhatsApp, Telegram, etc.",
+            icon = Icons.Default.Chat,
+            iconColor = Color(0xFF25D366),
+            onClick = { onDismiss(); onSocialClick() }
+        ),
         ToolItem(
             id = "vault",
             title = "Private Vault",

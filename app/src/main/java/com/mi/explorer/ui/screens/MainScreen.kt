@@ -299,6 +299,7 @@ fun MainScreen(
                         onFtpClick = { viewModel.openFtpServer() },
                         onDualPaneToggle = { viewModel.toggleDualPane() },
                         onCategoryClick = { cat, title -> viewModel.openCategory(cat, title) },
+                        onSocialClick = { viewModel.openSocialHub() },
                         onAppManagerClick = { viewModel.openAppManager() },
                         onVaultClick = { viewModel.openVault() },
                         onDuplicatesClick = { viewModel.openDuplicateFinder() },
@@ -903,6 +904,7 @@ fun StorageTabContent(
     onFtpClick: () -> Unit = {},
     onDualPaneToggle: () -> Unit = {},
     onCategoryClick: (FileCategory, String) -> Unit,
+    onSocialClick: () -> Unit = {},
     onAppManagerClick: () -> Unit,
     onVaultClick: () -> Unit,
     onDuplicatesClick: () -> Unit,
@@ -969,6 +971,7 @@ fun StorageTabContent(
                 CategoryGrid(
                     onCategoryClick = onCategoryClick,
                     onToolsClick = { showToolsSheet = true },
+                    onSocialClick = onSocialClick,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                 )
             }
@@ -1479,7 +1482,8 @@ fun StorageTabContent(
             onAppManagerClick = onAppManagerClick,
             onFtpClick = onFtpClick,
             onDualPaneToggle = onDualPaneToggle,
-            isDualPaneActive = isDualPaneActive
+            isDualPaneActive = isDualPaneActive,
+            onSocialClick = onSocialClick
         )
     }
 }
