@@ -652,51 +652,16 @@ fun MainScreen(
     }
 
     if (showSortMenu) {
-        AlertDialog(
-            onDismissRequest = { showSortMenu = false },
-            title = { Text("Sort files") },
-            text = {
-                Column {
-                    SortOptionRow("Name (A to Z)") {
-                        viewModel.setSortType(SortType.NAME_ASC)
-                        showSortMenu = false
-                    }
-                    SortOptionRow("Name (Z to A)") {
-                        viewModel.setSortType(SortType.NAME_DESC)
-                        showSortMenu = false
-                    }
-                    SortOptionRow("Date (Newest first)") {
-                        viewModel.setSortType(SortType.DATE_NEWEST)
-                        showSortMenu = false
-                    }
-                    SortOptionRow("Date (Oldest first)") {
-                        viewModel.setSortType(SortType.DATE_OLDEST)
-                        showSortMenu = false
-                    }
-                    SortOptionRow("🔥 Size (Largest first)") {
-                        viewModel.setSortType(SortType.SIZE_LARGEST)
-                        showSortMenu = false
-                    }
-                    SortOptionRow("Size (Smallest first)") {
-                        viewModel.setSortType(SortType.SIZE_SMALLEST)
-                        showSortMenu = false
-                    }
-                    SortOptionRow("Type (Extension)") {
-                        viewModel.setSortType(SortType.TYPE)
-                        showSortMenu = false
-                    }
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
-                    SortOptionRow(if (storageState.showHidden) "Hide hidden files" else "Show hidden files") {
-                        viewModel.toggleShowHidden()
-                        showSortMenu = false
-                    }
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = { showSortMenu = false }) {
-                    Text("Close")
-                }
-            }
+        MiSortBottomSheet(
+            currentSortType = storageState.sortType,
+            foldersOnTop = storageState.foldersOnTop,
+            showHidden = storageState.showHidden,
+            filterOnlyBigFiles = storageState.filterOnlyBigFiles,
+            onSortTypeChange = { viewModel.setSortType(it) },
+            onToggleFoldersOnTop = { viewModel.toggleFoldersOnTop() },
+            onToggleShowHidden = { viewModel.toggleShowHidden() },
+            onToggleBigFilesFilter = { viewModel.toggleBigFilesFilter() },
+            onDismiss = { showSortMenu = false }
         )
     }
 
@@ -1325,15 +1290,40 @@ fun StorageTabContent(
                     modifier = Modifier.weight(1f)
                 )
 
+                // Interactive Sort Pill
+                Surface(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(10.dp))
+                        .clickable(onClick = onShowSortMenu)
+                        .testTag("sort_pill_button"),
+                    color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Sort,
+                            contentDescription = "Sort",
+                            tint = MiOrange,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(
+                            text = storageState.sortType.chipLabel,
+                            style = MaterialTheme.typography.labelSmall.copy(fontWeight = FontWeight.SemiBold),
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(4.dp))
+
                 IconButton(onClick = onToggleViewMode, modifier = Modifier.size(36.dp)) {
                     Icon(
                         imageVector = if (storageState.viewMode == ViewMode.LIST) Icons.Default.GridView else Icons.Default.ViewList,
                         contentDescription = "View Mode"
                     )
-                }
-
-                IconButton(onClick = onShowSortMenu, modifier = Modifier.size(36.dp)) {
-                    Icon(Icons.Default.Sort, contentDescription = "Sort")
                 }
             }
         }

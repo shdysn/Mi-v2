@@ -83,6 +83,7 @@ data class StorageTabState(
     val selectedItems: Set<FileItem> = emptySet(),
     val viewMode: ViewMode = ViewMode.LIST,
     val sortType: SortType = SortType.NAME_ASC,
+    val foldersOnTop: Boolean = true,
     val searchQuery: String = "",
     val showHidden: Boolean = false,
     val filterOnlyBigFiles: Boolean = false,
@@ -411,6 +412,7 @@ class ExplorerViewModel(application: Application) : AndroidViewModel(application
                 directory = dir,
                 showHidden = current.showHidden,
                 sortType = current.sortType,
+                foldersOnTop = current.foldersOnTop,
                 searchQuery = current.searchQuery
             )
 
@@ -432,6 +434,7 @@ class ExplorerViewModel(application: Application) : AndroidViewModel(application
                     directory = prev,
                     showHidden = current.showHidden,
                     sortType = current.sortType,
+                    foldersOnTop = current.foldersOnTop,
                     searchQuery = current.searchQuery
                 )
                 _storageState.update {
@@ -460,8 +463,18 @@ class ExplorerViewModel(application: Application) : AndroidViewModel(application
     }
 
     fun setSortType(sortType: SortType) {
-        _storageState.update { it.copy(sortType = sortType) }
-        loadDirectory(_storageState.value.currentDir)
+        _storageState.update { current ->
+            val sorted = sortFileList(current.items, sortType, current.foldersOnTop)
+            current.copy(sortType = sortType, items = sorted)
+        }
+    }
+
+    fun toggleFoldersOnTop() {
+        _storageState.update { current ->
+            val newFoldersOnTop = !current.foldersOnTop
+            val sorted = sortFileList(current.items, current.sortType, newFoldersOnTop)
+            current.copy(foldersOnTop = newFoldersOnTop, items = sorted)
+        }
     }
 
     fun toggleShowHidden() {

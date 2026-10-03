@@ -177,14 +177,88 @@ data class StorageSpace(
     val formattedFree: String get() = FileItem.formatBytes(freeBytes)
 }
 
-enum class SortType {
-    NAME_ASC,
-    NAME_DESC,
-    DATE_NEWEST,
-    DATE_OLDEST,
-    SIZE_LARGEST,
-    SIZE_SMALLEST,
+enum class SortCriteria {
+    NAME,
+    SIZE,
+    DATE,
     TYPE
+}
+
+enum class SortDirection {
+    ASCENDING,
+    DESCENDING
+}
+
+enum class SortType(val criteria: SortCriteria, val direction: SortDirection) {
+    NAME_ASC(SortCriteria.NAME, SortDirection.ASCENDING),
+    NAME_DESC(SortCriteria.NAME, SortDirection.DESCENDING),
+    DATE_NEWEST(SortCriteria.DATE, SortDirection.DESCENDING),
+    DATE_OLDEST(SortCriteria.DATE, SortDirection.ASCENDING),
+    SIZE_LARGEST(SortCriteria.SIZE, SortDirection.DESCENDING),
+    SIZE_SMALLEST(SortCriteria.SIZE, SortDirection.ASCENDING),
+    TYPE_ASC(SortCriteria.TYPE, SortDirection.ASCENDING),
+    TYPE_DESC(SortCriteria.TYPE, SortDirection.DESCENDING),
+    TYPE(SortCriteria.TYPE, SortDirection.ASCENDING);
+
+    val label: String
+        get() = when (this) {
+            NAME_ASC -> "Name (A to Z)"
+            NAME_DESC -> "Name (Z to A)"
+            DATE_NEWEST -> "Date (Newest first)"
+            DATE_OLDEST -> "Date (Oldest first)"
+            SIZE_LARGEST -> "Size (Largest first)"
+            SIZE_SMALLEST -> "Size (Smallest first)"
+            TYPE_ASC, TYPE -> "Type (A to Z)"
+            TYPE_DESC -> "Type (Z to A)"
+        }
+
+    val chipLabel: String
+        get() = when (this) {
+            NAME_ASC -> "Name ↑"
+            NAME_DESC -> "Name ↓"
+            DATE_NEWEST -> "Date ↓"
+            DATE_OLDEST -> "Date ↑"
+            SIZE_LARGEST -> "Size ↓"
+            SIZE_SMALLEST -> "Size ↑"
+            TYPE_ASC, TYPE -> "Type ↑"
+            TYPE_DESC -> "Type ↓"
+        }
+
+    companion object {
+        fun from(criteria: SortCriteria, direction: SortDirection): SortType {
+            return when (criteria) {
+                SortCriteria.NAME -> if (direction == SortDirection.ASCENDING) NAME_ASC else NAME_DESC
+                SortCriteria.SIZE -> if (direction == SortDirection.DESCENDING) SIZE_LARGEST else SIZE_SMALLEST
+                SortCriteria.DATE -> if (direction == SortDirection.DESCENDING) DATE_NEWEST else DATE_OLDEST
+                SortCriteria.TYPE -> if (direction == SortDirection.ASCENDING) TYPE_ASC else TYPE_DESC
+            }
+        }
+    }
+}
+
+fun sortFileList(
+    items: List<FileItem>,
+    sortType: SortType,
+    foldersOnTop: Boolean = true
+): List<FileItem> {
+    val comparator: Comparator<FileItem> = when (sortType) {
+        SortType.NAME_ASC -> compareBy { it.name.lowercase(Locale.ROOT) }
+        SortType.NAME_DESC -> compareByDescending { it.name.lowercase(Locale.ROOT) }
+        SortType.DATE_NEWEST -> compareByDescending { it.lastModified }
+        SortType.DATE_OLDEST -> compareBy { it.lastModified }
+        SortType.SIZE_LARGEST -> compareByDescending { it.effectiveSize }
+        SortType.SIZE_SMALLEST -> compareBy { it.effectiveSize }
+        SortType.TYPE_ASC, SortType.TYPE -> compareBy<FileItem>({ it.extension }, { it.name.lowercase(Locale.ROOT) })
+        SortType.TYPE_DESC -> compareByDescending<FileItem>({ it.extension }).thenBy { it.name.lowercase(Locale.ROOT) }
+    }
+
+    return if (foldersOnTop) {
+        val folders = items.filter { it.isDirectory }.sortedWith(comparator)
+        val files = items.filter { !it.isDirectory }.sortedWith(comparator)
+        folders + files
+    } else {
+        items.sortedWith(comparator)
+    }
 }
 
 enum class ViewMode {

@@ -8,6 +8,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.FolderOpen
+import androidx.compose.material.icons.filled.Sort
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -19,8 +20,11 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.mi.explorer.data.model.ApkTab
 import com.mi.explorer.data.model.FileCategory
 import com.mi.explorer.data.model.FileItem
+import com.mi.explorer.data.model.SortType
+import com.mi.explorer.data.model.sortFileList
 import com.mi.explorer.ui.components.ChecksumDialog
 import com.mi.explorer.ui.components.MiFileRow
+import com.mi.explorer.ui.components.MiSortBottomSheet
 import com.mi.explorer.ui.components.OpenFileChooserDialog
 import com.mi.explorer.ui.theme.MiGreen
 import com.mi.explorer.ui.theme.MiOrange
@@ -36,6 +40,12 @@ fun CategoryViewScreen(
     var openWithTarget by remember { mutableStateOf<FileItem?>(null) }
     var checksumTarget by remember { mutableStateOf<FileItem?>(null) }
     var deleteTarget by remember { mutableStateOf<FileItem?>(null) }
+    var showCategorySort by remember { mutableStateOf(false) }
+    var categorySortType by remember { mutableStateOf(SortType.DATE_NEWEST) }
+
+    val sortedItems = remember(state.items, categorySortType) {
+        sortFileList(state.items, categorySortType, foldersOnTop = false)
+    }
 
     Scaffold(
         modifier = modifier.testTag("category_view_screen"),
@@ -60,6 +70,9 @@ fun CategoryViewScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = { showCategorySort = true }) {
+                        Icon(Icons.Default.Sort, contentDescription = "Sort", tint = MiOrange)
+                    }
                     if (state.category == FileCategory.APK) {
                         FilledTonalButton(
                             onClick = { viewModel.openAppManager(tab = ApkTab.INSTALLED_APPS) },
@@ -112,7 +125,7 @@ fun CategoryViewScreen(
                     contentPadding = PaddingValues(12.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    items(state.items, key = { it.path }) { item ->
+                    items(sortedItems, key = { it.path }) { item ->
                         MiFileRow(
                             item = item,
                             isSelected = false,
@@ -248,6 +261,20 @@ fun CategoryViewScreen(
                     Text("Cancel")
                 }
             }
+        )
+    }
+
+    if (showCategorySort) {
+        MiSortBottomSheet(
+            currentSortType = categorySortType,
+            foldersOnTop = false,
+            showHidden = false,
+            filterOnlyBigFiles = false,
+            onSortTypeChange = { categorySortType = it },
+            onToggleFoldersOnTop = {},
+            onToggleShowHidden = {},
+            onToggleBigFilesFilter = {},
+            onDismiss = { showCategorySort = false }
         )
     }
 }

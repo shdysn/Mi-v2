@@ -281,6 +281,7 @@ class FileRepository(private val context: Context) {
         directory: File,
         showHidden: Boolean = false,
         sortType: SortType = SortType.NAME_ASC,
+        foldersOnTop: Boolean = true,
         searchQuery: String = ""
     ): List<FileItem> = withContext(Dispatchers.IO) {
         val files = directory.listFiles() ?: return@withContext emptyList()
@@ -308,29 +309,11 @@ class FileRepository(private val context: Context) {
         }
 
         if (searchQuery.isNotBlank()) {
-            val query = searchQuery.trim().lowercase()
-            items = items.filter { it.name.lowercase().contains(query) }
+            val query = searchQuery.trim().lowercase(java.util.Locale.ROOT)
+            items = items.filter { it.name.lowercase(java.util.Locale.ROOT).contains(query) }
         }
 
-        val folders = items.filter { it.isDirectory }
-        val normalFiles = items.filter { !it.isDirectory }
-
-        val sortedFolders = sortList(folders, sortType)
-        val sortedFiles = sortList(normalFiles, sortType)
-
-        sortedFolders + sortedFiles
-    }
-
-    private fun sortList(list: List<FileItem>, sortType: SortType): List<FileItem> {
-        return when (sortType) {
-            SortType.NAME_ASC -> list.sortedBy { it.name.lowercase() }
-            SortType.NAME_DESC -> list.sortedByDescending { it.name.lowercase() }
-            SortType.DATE_NEWEST -> list.sortedByDescending { it.lastModified }
-            SortType.DATE_OLDEST -> list.sortedBy { it.lastModified }
-            SortType.SIZE_LARGEST -> list.sortedByDescending { it.effectiveSize }
-            SortType.SIZE_SMALLEST -> list.sortedBy { it.effectiveSize }
-            SortType.TYPE -> list.sortedWith(compareBy({ it.extension }, { it.name.lowercase() }))
-        }
+        com.mi.explorer.data.model.sortFileList(items, sortType, foldersOnTop)
     }
 
     suspend fun getRecentFiles(): List<FileItem> = withContext(Dispatchers.IO) {
