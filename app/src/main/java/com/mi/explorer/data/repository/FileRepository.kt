@@ -177,6 +177,14 @@ class FileRepository(private val context: Context) {
                 if (!sampleAudio.exists()) {
                     createSampleWavFile(sampleAudio)
                 }
+
+                // Sample Social Media Folders showcasing custom branded social icons
+                val whatsAppDir = File(base, "WhatsApp").apply { mkdirs() }
+                File(whatsAppDir, "WhatsApp Images").apply { mkdirs() }
+                File(whatsAppDir, "WhatsApp Video").apply { mkdirs() }
+                File(base, "Telegram").apply { mkdirs() }
+                File(base, "Instagram").apply { mkdirs() }
+                File(base, "Download").apply { mkdirs() }
             }
         } catch (e: Exception) {
             e.printStackTrace()

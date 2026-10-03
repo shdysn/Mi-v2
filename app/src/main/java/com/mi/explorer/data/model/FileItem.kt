@@ -6,6 +6,27 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
+enum class SocialFolderType(
+    val title: String,
+    val brandColorHex: Long
+) {
+    WHATSAPP("WhatsApp", 0xFF25D366),
+    TELEGRAM("Telegram", 0xFF24A1DE),
+    INSTAGRAM("Instagram", 0xFFE1306C),
+    FACEBOOK("Facebook", 0xFF1877F2),
+    MESSENGER("Messenger", 0xFF0084FF),
+    TIKTOK("TikTok", 0xFFFE2C55),
+    SNAPCHAT("Snapchat", 0xFFEAB308),
+    TWITTER("X / Twitter", 0xFF1DA1F2),
+    YOUTUBE("YouTube", 0xFFFF0000),
+    REDDIT("Reddit", 0xFFFF4500),
+    DISCORD("Discord", 0xFF5865F2),
+    PINTEREST("Pinterest", 0xFFE60023),
+    LINKEDIN("LinkedIn", 0xFF0A66C2),
+    WECHAT("WeChat", 0xFF07C160),
+    SHAREME("ShareMe", 0xFF0284C7)
+}
+
 enum class FileCategory {
     FOLDER,
     IMAGE,
@@ -98,9 +119,33 @@ data class FileItem(
             }
         }
 
+    val socialType: SocialFolderType?
+        get() {
+            if (!isDirectory) return null
+            val lower = name.lowercase(Locale.ROOT)
+            return when {
+                lower.contains("whatsapp") -> SocialFolderType.WHATSAPP
+                lower.contains("telegram") -> SocialFolderType.TELEGRAM
+                lower.contains("instagram") -> SocialFolderType.INSTAGRAM
+                lower.contains("facebook") || lower == "fb" -> SocialFolderType.FACEBOOK
+                lower.contains("messenger") -> SocialFolderType.MESSENGER
+                lower.contains("tiktok") || lower.contains("musically") -> SocialFolderType.TIKTOK
+                lower.contains("snapchat") || lower.contains("snap") -> SocialFolderType.SNAPCHAT
+                lower.contains("twitter") || lower == "x" -> SocialFolderType.TWITTER
+                lower.contains("youtube") || lower == "yt" -> SocialFolderType.YOUTUBE
+                lower.contains("reddit") -> SocialFolderType.REDDIT
+                lower.contains("discord") -> SocialFolderType.DISCORD
+                lower.contains("pinterest") -> SocialFolderType.PINTEREST
+                lower.contains("linkedin") -> SocialFolderType.LINKEDIN
+                lower.contains("wechat") || lower.contains("weixin") -> SocialFolderType.WECHAT
+                lower.contains("shareme") || lower.contains("shareit") || lower.contains("midrop") -> SocialFolderType.SHAREME
+                else -> null
+            }
+        }
+
     val friendlyTypeLabel: String
         get() = when (category) {
-            FileCategory.FOLDER -> "Folder"
+            FileCategory.FOLDER -> socialType?.let { "${it.title} Folder" } ?: "Folder"
             FileCategory.IMAGE -> "${extension.uppercase(Locale.ROOT)} Image"
             FileCategory.AUDIO -> "${extension.uppercase(Locale.ROOT)} Audio"
             FileCategory.VIDEO -> "${extension.uppercase(Locale.ROOT)} Video"

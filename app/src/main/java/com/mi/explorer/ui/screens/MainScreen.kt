@@ -1112,6 +1112,7 @@ fun StorageTabContent(
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             items(favorites, key = { it.path }) { fav ->
+                                val (favIcon, favColor) = getFileItemIconAndColor(FileItem(fav.file))
                                 Surface(
                                     modifier = Modifier
                                         .clip(RoundedCornerShape(12.dp))
@@ -1124,9 +1125,9 @@ fun StorageTabContent(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Icon(
-                                            imageVector = if (fav.isDirectory) Icons.Default.Folder else Icons.Default.InsertDriveFile,
+                                            imageVector = favIcon,
                                             contentDescription = null,
-                                            tint = Color(0xFFFFB300),
+                                            tint = favColor,
                                             modifier = Modifier.size(18.dp)
                                         )
                                         Spacer(modifier = Modifier.width(6.dp))

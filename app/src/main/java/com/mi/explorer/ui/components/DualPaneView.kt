@@ -197,6 +197,7 @@ fun SinglePaneContainer(
             contentPadding = PaddingValues(vertical = 4.dp)
         ) {
             items(state.items, key = { it.path }) { item ->
+                val (itemIcon, itemColor) = getFileItemIconAndColor(item)
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -209,9 +210,9 @@ fun SinglePaneContainer(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        imageVector = if (item.isDirectory) Icons.Default.Folder else Icons.Default.InsertDriveFile,
+                        imageVector = itemIcon,
                         contentDescription = null,
-                        tint = if (item.isDirectory) MiOrange else MaterialTheme.colorScheme.primary,
+                        tint = itemColor,
                         modifier = Modifier.size(20.dp)
                     )
                     Spacer(modifier = Modifier.width(10.dp))

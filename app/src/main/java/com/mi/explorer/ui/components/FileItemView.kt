@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.Send
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -23,7 +24,50 @@ import androidx.compose.ui.unit.sp
 import com.mi.explorer.data.model.ColorTag
 import com.mi.explorer.data.model.FileCategory
 import com.mi.explorer.data.model.FileItem
+import com.mi.explorer.data.model.SocialFolderType
 import com.mi.explorer.ui.theme.*
+import java.util.Locale
+
+fun getFileItemIconAndColor(item: FileItem): Pair<ImageVector, Color> {
+    if (item.isDirectory) {
+        val lower = item.name.lowercase(Locale.ROOT)
+        return when {
+            // Social Media Folders
+            lower.contains("whatsapp") -> Pair(Icons.Default.Chat, Color(0xFF25D366))
+            lower.contains("telegram") -> Pair(Icons.AutoMirrored.Filled.Send, Color(0xFF24A1DE))
+            lower.contains("instagram") -> Pair(Icons.Default.PhotoCamera, Color(0xFFE1306C))
+            lower.contains("facebook") || lower == "fb" -> Pair(Icons.Default.ThumbUp, Color(0xFF1877F2))
+            lower.contains("messenger") -> Pair(Icons.Default.FlashOn, Color(0xFF0084FF))
+            lower.contains("tiktok") || lower.contains("musically") -> Pair(Icons.Default.MusicVideo, Color(0xFFFE2C55))
+            lower.contains("snapchat") || lower.contains("snap") -> Pair(Icons.Default.AutoAwesome, Color(0xFFEAB308))
+            lower.contains("twitter") || lower == "x" -> Pair(Icons.Default.Tag, Color(0xFF1DA1F2))
+            lower.contains("youtube") || lower == "yt" -> Pair(Icons.Default.SmartDisplay, Color(0xFFFF0000))
+            lower.contains("reddit") -> Pair(Icons.Default.Forum, Color(0xFFFF4500))
+            lower.contains("discord") -> Pair(Icons.Default.SportsEsports, Color(0xFF5865F2))
+            lower.contains("pinterest") -> Pair(Icons.Default.PushPin, Color(0xFFE60023))
+            lower.contains("linkedin") -> Pair(Icons.Default.Work, Color(0xFF0A66C2))
+            lower.contains("wechat") || lower.contains("weixin") -> Pair(Icons.Default.Forum, Color(0xFF07C160))
+            lower.contains("shareme") || lower.contains("shareit") || lower.contains("midrop") -> Pair(Icons.Default.WifiTethering, Color(0xFF0284C7))
+
+            // Standard Android / MIUI Folders
+            lower == "download" || lower == "downloads" -> Pair(Icons.Default.FileDownload, Color(0xFF2563EB))
+            lower == "dcim" || lower == "camera" -> Pair(Icons.Default.PhotoCamera, Color(0xFF7C3AED))
+            lower.contains("pictures") || lower.contains("photos") || lower.contains("screenshots") -> Pair(Icons.Default.PhotoLibrary, Color(0xFF059669))
+            lower.contains("music") || lower.contains("audio") || lower.contains("podcasts") -> Pair(Icons.Default.Headphones, Color(0xFFD97706))
+            lower.contains("movies") || lower.contains("videos") || lower == "video" -> Pair(Icons.Default.Movie, Color(0xFFE11D48))
+            lower.contains("documents") || lower == "docs" -> Pair(Icons.Default.Description, Color(0xFFEA580C))
+            lower.contains("bluetooth") -> Pair(Icons.Default.Bluetooth, Color(0xFF2563EB))
+            lower == "android" -> Pair(Icons.Default.Android, Color(0xFF10B981))
+            lower.contains("backup") -> Pair(Icons.Default.Backup, Color(0xFF6366F1))
+            lower.contains("record") || lower.contains("voice") -> Pair(Icons.Default.Mic, Color(0xFFE11D48))
+
+            // Generic Folder
+            else -> Pair(Icons.Default.Folder, Color(0xFFFFB300))
+        }
+    }
+
+    return getMiCategoryColors(item.category)
+}
 
 fun getMiCategoryColors(category: FileCategory): Pair<ImageVector, Color> {
     return when (category) {
@@ -53,7 +97,7 @@ fun MiFileRow(
     modifier: Modifier = Modifier
 ) {
     var showMenu by remember { mutableStateOf(false) }
-    val (icon, color) = getMiCategoryColors(item.category)
+    val (icon, color) = getFileItemIconAndColor(item)
 
     val itemBg = if (isSelected) MiOrange.copy(alpha = 0.08f) else Color.Transparent
 
@@ -110,6 +154,24 @@ fun MiFileRow(
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f, fill = false)
                 )
+                val social = item.socialType
+                if (social != null) {
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Surface(
+                        color = color.copy(alpha = 0.14f),
+                        shape = RoundedCornerShape(4.dp)
+                    ) {
+                        Text(
+                            text = social.title,
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontSize = 9.sp,
+                                fontWeight = FontWeight.Bold
+                            ),
+                            color = color,
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 1.dp)
+                        )
+                    }
+                }
                 if (tags.isNotEmpty()) {
                     Spacer(modifier = Modifier.width(6.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(3.dp)) {
